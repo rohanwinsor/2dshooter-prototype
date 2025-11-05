@@ -71,7 +71,7 @@ animations = [{
 }],
 "loop": false,
 "name": &"shoot",
-"speed": 15.0
+"speed": 20.0
 }]
 
 [node name="Player" type="CharacterBody2D"]
@@ -101,7 +101,7 @@ frame = 12
 frame_progress = 1.0
 offset = Vector2(240, -40)
 
-[node name="MuzzleFlash" type="Marker2D" parent="AnimatedSprite2D"]
+[node name="BulletSpawnLoc" type="Marker2D" parent="AnimatedSprite2D"]
 position = Vector2(350.26605, -48.101353)
 rotation = -1.6146065
 scale = Vector2(8.571429, 8.571429)

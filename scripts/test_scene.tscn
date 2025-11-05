@@ -216,11 +216,12 @@ layer_0/tile_data = PackedInt32Array(-262142, 65537, 3, -262141, 65537, 3, -2621
 color = Color(0.05, 0.055, 0.08, 1)
 
 [node name="Light1" parent="." instance=ExtResource("3_j83x7")]
+visible = false
 position = Vector2(77, -306)
 
 [node name="Light2" parent="." instance=ExtResource("3_j83x7")]
-visible = false
-position = Vector2(539, -306)
+position = Vector2(439, -306)
 
 [node name="Light3" parent="." instance=ExtResource("3_j83x7")]
+visible = false
 position = Vector2(900, -306)

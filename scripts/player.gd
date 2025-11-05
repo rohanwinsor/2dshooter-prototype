@@ -1,6 +1,5 @@
 extends CharacterBody2D
 
-const MUZZLE_FLASH = preload("res://effects/muzzle_flash.tscn")
 const BULLET = preload("res://entities/bullet.tscn")
 
 @export var walk_speed: float = 120.0
@@ -15,8 +14,8 @@ const BULLET = preload("res://entities/bullet.tscn")
 
 @onready var gun: AnimatedSprite2D = $AnimatedSprite2D
 @onready var player_sprite: Sprite2D = $Sprite2D
-@onready var muzzle_flash_marker: Marker2D = $AnimatedSprite2D/MuzzleFlash
 @onready var shoot_timer: Timer = $ShootTimer
+@onready var bullet_spawn_loc: Marker2D = $AnimatedSprite2D/BulletSpawnLoc
 
 var is_aiming: bool = false
 var gun_ready: bool = false
@@ -104,14 +103,9 @@ func shoot() -> void:
 	can_shoot = false
 	gun.play("shoot")
 
-	# Muzzle flash
-	var flash = MUZZLE_FLASH.instantiate()
-	muzzle_flash_marker.add_child(flash)
-	flash.emitting = true
-
 	# Calculate base angle toward cursor
 	var mouse_pos = get_global_mouse_position()
-	var aim_angle = muzzle_flash_marker.global_position.angle_to_point(mouse_pos)
+	var aim_angle = gun.global_position.angle_to_point(mouse_pos)
 
 	# Get reference for bullet placement
 	var scene_root = get_tree().current_scene
@@ -120,7 +114,7 @@ func shoot() -> void:
 	for i in range(pellet_count):
 		var bullet = BULLET.instantiate()
 		scene_root.add_child(bullet)
-		bullet.global_position = muzzle_flash_marker.global_position
+		bullet.global_position = gun.global_position
 
 		# Evenly distributed random spread
 		var spread = randf_range(-spread_angle * 0.5, spread_angle * 0.5)
