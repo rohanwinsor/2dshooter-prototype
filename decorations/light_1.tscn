@@ -1,0 +1,36 @@
+[gd_scene load_steps=5 format=3 uid="uid://b2kjef8nwd2k0"]
+
+[ext_resource type="Texture2D" uid="uid://cbh7no10xmmbx" path="res://assets/lightsource.png" id="1_61x01"]
+
+[sub_resource type="Gradient" id="Gradient_61x01"]
+offsets = PackedFloat32Array(0, 0.25, 0.5, 0.75, 1)
+colors = PackedColorArray(1, 1, 1, 0.6, 0.8, 0.8, 0.8, 0.5, 0.5, 0.5, 0.5, 0.35, 0.2, 0.2, 0.2, 0.15, 0, 0, 0, 0)
+
+[sub_resource type="GradientTexture2D" id="GradientTexture2D_m533b"]
+gradient = SubResource("Gradient_61x01")
+use_hdr = true
+fill = 1
+fill_from = Vector2(0.5140187, 0.44859812)
+fill_to = Vector2(1, 1)
+
+[sub_resource type="OccluderPolygon2D" id="OccluderPolygon2D_61x01"]
+polygon = PackedVector2Array(-12, 4, 12, 4, 12, 2, -12, 2)
+
+[node name="Light1" type="Node2D"]
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+scale = Vector2(2, 2)
+texture = ExtResource("1_61x01")
+
+[node name="PointLight2D" type="PointLight2D" parent="."]
+position = Vector2(0, 7)
+color = Color(1, 0.85, 0.6, 1)
+energy = 1.2
+shadow_enabled = true
+shadow_filter = 2
+texture = SubResource("GradientTexture2D_m533b")
+texture_scale = 50.0
+
+[node name="LightOccluder2D" type="LightOccluder2D" parent="."]
+position = Vector2(0, -2)
+occluder = SubResource("OccluderPolygon2D_61x01")
