@@ -24,6 +24,7 @@ enum WeaponType { SHOTGUN, RIFLE }
 var current_weapon: WeaponType = WeaponType.SHOTGUN
 var rifle_ammo: int = 1
 var is_reloading: bool = false
+var can_use_stair: bool = false
 
 @onready var shotgun: AnimatedSprite2D = $WeaponRoot/ShootGun
 @onready var rifle: AnimatedSprite2D = $WeaponRoot/Rifle
@@ -144,7 +145,7 @@ func _physics_process(delta: float) -> void:
 	if can_shoot and not is_reloading and current_gun.animation != "idle":
 		current_gun.play("idle")
 		
-	if Input.is_action_pressed("up") or Input.is_action_pressed("down"):
+	if Input.is_action_pressed("up") or Input.is_action_pressed("down") and can_use_stair:
 		enable_stair_collision()
 		disable_landing_collision()
 
@@ -267,9 +268,14 @@ func disable_landing_collision() -> void:
 
 # Called by StairZone when player enters
 func enter_stair_zone(zone: Area2D) -> void:
-	print("Entered stair zone")
+	can_use_stair = true
 	if not (Input.is_action_pressed("up") or Input.is_action_pressed("down")):
 		# if the player is not pressing the up or down button we can disable the stairs
 		enable_landing_collision()
 		disable_stair_collision()
+		
+
+# Called by StairZone when player enters
+func exit_stair_zone(zone: Area2D) -> void:
+	can_use_stair = false
 		
