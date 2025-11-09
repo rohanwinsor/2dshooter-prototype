@@ -192,6 +192,7 @@ func shoot() -> void:
 	# Get weapon-specific properties
 	var pellet_count = shotgun_pellet_count if current_weapon == WeaponType.SHOTGUN else rifle_pellet_count
 	var spread_angle = shotgun_spread_angle if current_weapon == WeaponType.SHOTGUN else rifle_spread_angle
+	var bullet_damage = 50.0 if current_weapon == WeaponType.SHOTGUN else 120.0
 	
 	# Decrease rifle ammo
 	if current_weapon == WeaponType.RIFLE:
@@ -203,6 +204,7 @@ func shoot() -> void:
 		var bullet = BULLET.instantiate()
 		scene_root.add_child(bullet)
 		bullet.global_position = bullet_spawn_loc.global_position
+		bullet.damage = bullet_damage
 
 		# Evenly distributed random spread
 		var spread = randf_range(-spread_angle * 0.5, spread_angle * 0.5)

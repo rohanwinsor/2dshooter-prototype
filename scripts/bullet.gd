@@ -32,14 +32,14 @@ func _physics_process(delta: float) -> void:
 		explode()
 		return
 	
-	# Check for hurtboxes (enemies) - collision layer 2
+	# Check for enemies - collision layer 2
 	query.collision_mask = 2
 	result = space_state.intersect_ray(query)
 	
 	if result:
-		# Hit a hurtbox
+		# Hit an enemy
 		var collider = result.collider
-		if collider is HurtboxComponent:
+		if collider.has_method("take_damage"):
 			collider.take_damage(damage)
 			position = to_local(result.position)
 			explode()
