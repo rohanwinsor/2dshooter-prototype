@@ -1,0 +1,21 @@
+[gd_scene load_steps=3 format=3 uid="uid://dijant1a81fp6"]
+
+[ext_resource type="Script" uid="uid://cwsc24ibekdrn" path="res://scripts/stair_zone.gd" id="1_stair"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_stair"]
+size = Vector2(64, 64)
+
+[node name="StairZone" type="Area2D"]
+collision_layer = 0
+script = ExtResource("1_stair")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("RectangleShape2D_stair")
+
+[node name="DebugShape" type="ColorRect" parent="."]
+visible = false
+offset_left = -32.0
+offset_top = -32.0
+offset_right = 32.0
+offset_bottom = 32.0
+color = Color(0, 1, 0, 0.2)

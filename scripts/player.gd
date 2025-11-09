@@ -34,6 +34,11 @@ var is_reloading: bool = false
 
 var current_gun: AnimatedSprite2D
 
+# Stair interaction
+var using_stairs: bool = false
+var landing_enabled: bool = true  # Landing platforms solid by default
+var stair_check_distance: float = 32.0  # How close to stairs to activate
+
 var is_aiming: bool = false
 var gun_ready: bool = false
 var can_shoot: bool = true
@@ -138,6 +143,10 @@ func _physics_process(delta: float) -> void:
 	# Keep gun on idle animation when not shooting or reloading
 	if can_shoot and not is_reloading and current_gun.animation != "idle":
 		current_gun.play("idle")
+		
+	if Input.is_action_pressed("up") or Input.is_action_pressed("down"):
+		enable_stair_collision()
+		disable_landing_collision()
 
 func switch_weapon(weapon: WeaponType) -> void:
 	current_weapon = weapon
@@ -225,3 +234,42 @@ func _on_gun_animation_finished() -> void:
 		can_shoot = true
 		if not is_reloading:
 			current_gun.play("idle")
+
+# Check if player is near stairs using raycasts
+func is_near_stairs() -> bool:
+	return true
+
+func enable_stair_collision() -> void:
+	if not using_stairs:
+		set_collision_mask_value(2, true)   # Enable collision with Layer 2 (stairs)
+		using_stairs = true
+		print("Stairs enabled | Mask: ", collision_mask, " (binary: ", String.num_int64(collision_mask, 2).pad_zeros(3), ")")
+
+func disable_stair_collision() -> void:
+	if using_stairs:
+		set_collision_mask_value(2, false)  # Disable collision with Layer 2 (stairs)
+		using_stairs = false
+		print("Stairs disabled | Mask: ", collision_mask, " (binary: ", String.num_int64(collision_mask, 2).pad_zeros(3), ")")
+
+func enable_landing_collision() -> void:
+	if not landing_enabled:
+		set_collision_mask_value(3, true)   # Enable collision with Layer 3 (landing platforms)
+		landing_enabled = true
+		print("Landing enabled | Mask: ", collision_mask, " (binary: ", String.num_int64(collision_mask, 2).pad_zeros(3), ")")
+
+func disable_landing_collision() -> void:
+	if landing_enabled:
+		set_collision_mask_value(3, false)  # Disable collision with Layer 3 (landing platforms)
+		landing_enabled = false
+		print("Landing disabled | Mask: ", collision_mask, " (binary: ", String.num_int64(collision_mask, 2).pad_zeros(3), ")")
+
+
+
+# Called by StairZone when player enters
+func enter_stair_zone(zone: Area2D) -> void:
+	print("Entered stair zone")
+	if not (Input.is_action_pressed("up") or Input.is_action_pressed("down")):
+		# if the player is not pressing the up or down button we can disable the stairs
+		enable_landing_collision()
+		disable_stair_collision()
+		
