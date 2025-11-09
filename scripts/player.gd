@@ -2,6 +2,8 @@ extends CharacterBody2D
 
 const BULLET = preload("res://entities/bullet.tscn")
 
+enum WeaponType { SHOTGUN, RIFLE }
+
 @export var walk_speed: float = 120.0
 @export var run_speed: float = 220.0
 @export var jump_velocity: float = -420.0
@@ -9,25 +11,53 @@ const BULLET = preload("res://entities/bullet.tscn")
 
 @export var aim_tween_duration: float = 0.15
 
-@export var pellet_count: int = 8
-@export var spread_angle: float = 30.0
+# Shotgun properties
+@export var shotgun_pellet_count: int = 8
+@export var shotgun_spread_angle: float = 30.0
 
-@onready var gun: AnimatedSprite2D = $AnimatedSprite2D
-@onready var player_sprite: Sprite2D = $Sprite2D
-@onready var shoot_timer: Timer = $ShootTimer
-@onready var bullet_spawn_loc: Marker2D = $AnimatedSprite2D/BulletSpawnLoc
+# Rifle properties
+@export var rifle_pellet_count: int = 1
+@export var rifle_spread_angle: float = 2.0
+@export var rifle_magazine_size: int = 1
+@export var rifle_reload_time: float = 1.0  # Time between shots
+
+var current_weapon: WeaponType = WeaponType.SHOTGUN
+var rifle_ammo: int = 1
+var is_reloading: bool = false
+
+@onready var shotgun: AnimatedSprite2D = $WeaponRoot/ShootGun
+@onready var rifle: AnimatedSprite2D = $WeaponRoot/Rifle
+@onready var weapon_root: Node2D = $WeaponRoot
+@onready var player_sprite: Sprite2D = $PlayerSprite
+@onready var bullet_spawn_loc: Marker2D = $WeaponRoot/BulletSpawnLoc
+@onready var muzzle_flash: PointLight2D = $PointLight2D
+
+var current_gun: AnimatedSprite2D
 
 var is_aiming: bool = false
 var gun_ready: bool = false
 var can_shoot: bool = true
-var original_gun_y_offset: float = -40.0  # From the scene's offset.y
+var shotgun_y_offset: float = -40.0  # From the shotgun's offset.y
+var rifle_y_offset: float = -85.0  # From the rifle's offset.y
 
 func _ready() -> void:
-	gun.visible = false
-	gun.modulate.a = 0.0
-	gun.scale = Vector2(0.04, 0.04)
-	gun.play("idle")
-	gun.animation_finished.connect(_on_gun_animation_finished)
+	muzzle_flash.enabled = false
+	weapon_root.visible = false
+	
+	# Setup shotgun
+	shotgun.modulate.a = 0.0
+	shotgun.scale = Vector2(0.04, 0.04)
+	shotgun.play("idle")
+	shotgun.animation_finished.connect(_on_gun_animation_finished)
+	
+	# Setup rifle
+	rifle.modulate.a = 0.0
+	rifle.scale = Vector2(0.10, 0.10)
+	rifle.play("idle")
+	rifle.animation_finished.connect(_on_gun_animation_finished)
+	
+	# Set initial weapon
+	switch_weapon(WeaponType.SHOTGUN)
 
 
 func _physics_process(delta: float) -> void:
@@ -53,8 +83,13 @@ func _physics_process(delta: float) -> void:
 	# Sprite facing
 	var facing_left = direction_to_mouse.x < 0
 	player_sprite.flip_h = facing_left
-	gun.flip_v = facing_left
 
+	# Weapon switching
+	if Input.is_action_just_pressed("weapon_1") and current_weapon != WeaponType.SHOTGUN:
+		switch_weapon(WeaponType.SHOTGUN)
+	elif Input.is_action_just_pressed("weapon_2") and current_weapon != WeaponType.RIFLE:
+		switch_weapon(WeaponType.RIFLE)
+	
 	# Aim visibility and tween
 	var is_running = Input.is_action_pressed("shift")
 	var aiming = Input.is_action_pressed("aim") and not is_running
@@ -63,10 +98,11 @@ func _physics_process(delta: float) -> void:
 		# Start aiming - tween in
 		is_aiming = true
 		gun_ready = false
-		gun.visible = true
+		weapon_root.visible = true
 		var tween = create_tween().set_parallel(true)
-		tween.tween_property(gun, "modulate:a", 1.0, aim_tween_duration)
-		tween.tween_property(gun, "scale", Vector2(0.06, 0.06), aim_tween_duration).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		tween.tween_property(current_gun, "modulate:a", 1.0, aim_tween_duration)
+		var target_scale = Vector2(0.06, 0.06) if current_weapon == WeaponType.SHOTGUN else Vector2(0.15, 0.15)
+		tween.tween_property(current_gun, "scale", target_scale, aim_tween_duration).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 		tween.tween_callback(func(): gun_ready = true).set_delay(aim_tween_duration)
 	
 	elif (not aiming or is_running) and is_aiming:
@@ -74,59 +110,118 @@ func _physics_process(delta: float) -> void:
 		is_aiming = false
 		gun_ready = false
 		var tween = create_tween().set_parallel(true)
-		tween.tween_property(gun, "modulate:a", 0.0, aim_tween_duration)
-		tween.tween_property(gun, "scale", Vector2(0.04, 0.04), aim_tween_duration).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN)
-		tween.tween_callback(func(): gun.visible = false).set_delay(aim_tween_duration)
+		tween.tween_property(current_gun, "modulate:a", 0.0, aim_tween_duration)
+		var target_scale = Vector2(0.04, 0.04) if current_weapon == WeaponType.SHOTGUN else Vector2(0.10, 0.10)
+		tween.tween_property(current_gun, "scale", target_scale, aim_tween_duration).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN)
+		tween.tween_callback(func(): weapon_root.visible = false).set_delay(aim_tween_duration)
 
 	if is_aiming:
-		# Rotate gun toward cursor from gun's position
-		var angle_to_mouse = gun.global_position.angle_to_point(mouse_pos)
-		gun.rotation = angle_to_mouse
-
-		# Position alignment (avoid inversion drift)
-		gun.position.x = abs(gun.position.x) * (-1 if facing_left else 1)
+		# Rotate weapon_root toward cursor so BulletSpawnLoc points at mouse
+		var angle_to_mouse = weapon_root.global_position.angle_to_point(mouse_pos)
+		weapon_root.rotation = angle_to_mouse
 		
-		# Adjust offset.y when flipped to compensate for vertical flip
-		# When flip_v is true, the offset needs to be inverted
-		gun.offset.y = -original_gun_y_offset if facing_left else original_gun_y_offset
+		# Flip weapon_root vertically when facing left
+		weapon_root.scale.y = -1.0 if facing_left else 1.0
 
 		# Fire
-		if Input.is_action_just_pressed("shoot") and shoot_timer.is_stopped() and gun_ready and can_shoot:
-			shoot()
+		if Input.is_action_just_pressed("shoot") and gun_ready and can_shoot and not is_reloading:
+			if current_weapon == WeaponType.RIFLE and rifle_ammo <= 0:
+				# Auto reload for rifle
+				reload_rifle()
+			else:
+				shoot()
+		
+		# Manual reload for rifle
+		if Input.is_action_just_pressed("reload") and current_weapon == WeaponType.RIFLE and rifle_ammo < rifle_magazine_size and not is_reloading:
+			reload_rifle()
 
-	# Keep gun on idle animation when not shooting
-	if can_shoot and gun.animation != "idle":
-		gun.play("idle")
+	# Keep gun on idle animation when not shooting or reloading
+	if can_shoot and not is_reloading and current_gun.animation != "idle":
+		current_gun.play("idle")
+
+func switch_weapon(weapon: WeaponType) -> void:
+	current_weapon = weapon
+	
+	# Hide all weapons
+	shotgun.visible = false
+	rifle.visible = false
+	
+	# Show and setup current weapon
+	if current_weapon == WeaponType.SHOTGUN:
+		current_gun = shotgun
+		shotgun.visible = true
+		print("Switched to Shotgun")
+	else:  # RIFLE
+		current_gun = rifle
+		rifle.visible = true
+		rifle_ammo = rifle_magazine_size
+		print("Switched to Rifle")
+	
+	# Reset animation state
+	current_gun.play("idle")
+	can_shoot = true
+	is_reloading = false
 
 func shoot() -> void:
 	# Play shoot animation
 	can_shoot = false
-	gun.play("shoot")
+	current_gun.play("shoot")
+	
+	# Trigger muzzle flash
+	muzzle_flash.enabled = true
+	muzzle_flash.energy = randf_range(2.5, 3.5)
+	get_tree().create_timer(0.08).timeout.connect(func(): muzzle_flash.enabled = false)
 
 	# Calculate base angle toward cursor
 	var mouse_pos = get_global_mouse_position()
-	var aim_angle = gun.global_position.angle_to_point(mouse_pos)
+	var aim_angle = weapon_root.global_position.angle_to_point(mouse_pos)
 
 	# Get reference for bullet placement
 	var scene_root = get_tree().current_scene
+
+	# Get weapon-specific properties
+	var pellet_count = shotgun_pellet_count if current_weapon == WeaponType.SHOTGUN else rifle_pellet_count
+	var spread_angle = shotgun_spread_angle if current_weapon == WeaponType.SHOTGUN else rifle_spread_angle
+	
+	# Decrease rifle ammo
+	if current_weapon == WeaponType.RIFLE:
+		rifle_ammo -= 1
+		print("Rifle ammo: ", rifle_ammo, "/", rifle_magazine_size)
 
 	# Fire pellets
 	for i in range(pellet_count):
 		var bullet = BULLET.instantiate()
 		scene_root.add_child(bullet)
-		bullet.global_position = gun.global_position
+		bullet.global_position = bullet_spawn_loc.global_position
 
 		# Evenly distributed random spread
 		var spread = randf_range(-spread_angle * 0.5, spread_angle * 0.5)
 		var angle = aim_angle + deg_to_rad(spread)
 		bullet.global_rotation = angle
 		bullet.direction = Vector2.RIGHT.rotated(angle)
+	
+	# Auto-reload rifle if empty
+	if current_weapon == WeaponType.RIFLE and rifle_ammo <= 0:
+		get_tree().create_timer(0.5).timeout.connect(reload_rifle)
 
-	# Cooldown
-	shoot_timer.start()
-	print("Bang!")
+func reload_rifle() -> void:
+	if is_reloading:
+		return
+		
+	is_reloading = true
+	can_shoot = false
+	print("Reloading rifle...")
+	
+	# Wait for reload time
+	await get_tree().create_timer(rifle_reload_time).timeout
+	
+	rifle_ammo = rifle_magazine_size
+	is_reloading = false
+	can_shoot = true
+	print("Rifle reloaded!")
 
 func _on_gun_animation_finished() -> void:
-	if gun.animation == "shoot":
+	if current_gun.animation == "shoot":
 		can_shoot = true
-		gun.play("idle")
+		if not is_reloading:
+			current_gun.play("idle")
