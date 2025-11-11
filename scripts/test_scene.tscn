@@ -46,6 +46,7 @@ sources/0 = SubResource("TileSetAtlasSource_7kyx1")
 
 [node name="Player" parent="." instance=ExtResource("1_1nsno")]
 position = Vector2(146, -140)
+collision_layer = 1
 
 [node name="Camera2D" type="Camera2D" parent="Player"]
 position = Vector2(11, -148)
@@ -90,4 +91,4 @@ position = Vector2(577.00006, -241.00002)
 scale = Vector2(0.46975404, 0.5370434)
 
 [node name="Enemy" parent="." instance=ExtResource("5_7kyx1")]
-position = Vector2(81, -141)
+position = Vector2(-63, -149)

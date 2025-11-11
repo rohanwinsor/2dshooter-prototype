@@ -47,6 +47,7 @@ var shotgun_y_offset: float = -40.0  # From the shotgun's offset.y
 var rifle_y_offset: float = -85.0  # From the rifle's offset.y
 
 func _ready() -> void:
+	add_to_group("Player")
 	muzzle_flash.enabled = false
 	weapon_root.visible = false
 	
@@ -145,7 +146,8 @@ func _physics_process(delta: float) -> void:
 	if can_shoot and not is_reloading and current_gun.animation != "idle":
 		current_gun.play("idle")
 		
-	if Input.is_action_pressed("up") or Input.is_action_pressed("down") and can_use_stair:
+	if (Input.is_action_pressed("up") or Input.is_action_pressed("down")) and can_use_stair:
+		print("can_use_stair ::", can_use_stair)
 		enable_stair_collision()
 		disable_landing_collision()
 
@@ -270,6 +272,7 @@ func disable_landing_collision() -> void:
 
 # Called by StairZone when player enters
 func enter_stair_zone(zone: Area2D) -> void:
+	print("enter stair zone")
 	can_use_stair = true
 	if not (Input.is_action_pressed("up") or Input.is_action_pressed("down")):
 		# if the player is not pressing the up or down button we can disable the stairs
@@ -279,5 +282,6 @@ func enter_stair_zone(zone: Area2D) -> void:
 
 # Called by StairZone when player enters
 func exit_stair_zone(zone: Area2D) -> void:
+	print("exit stair zone")
 	can_use_stair = false
 		
