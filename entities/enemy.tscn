@@ -89,6 +89,7 @@ position = Vector2(-0.5, 2)
 shape = SubResource("RectangleShape2D_pqhw6")
 
 [node name="PlayerDetection" type="RayCast2D" parent="."]
+visible = false
 target_position = Vector2(46, 0)
 
 [node name="VisibleOnScreenNotifier2D" type="VisibleOnScreenNotifier2D" parent="."]
@@ -98,3 +99,6 @@ position = Vector2(17.999998, -1.9999999)
 scale = Vector2(0.06, 0.06)
 sprite_frames = SubResource("SpriteFrames_ayeso")
 animation = &"shoot"
+
+[node name="ObstacleDetection" type="RayCast2D" parent="."]
+target_position = Vector2(46, 0)

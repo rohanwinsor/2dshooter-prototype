@@ -11,13 +11,18 @@ enum WeaponType { SHOTGUN, RIFLE }
 
 @export var aim_tween_duration: float = 0.15
 
+# Weapon range
+@export var max_weapon_range: float = 2000.0
+
 # Shotgun properties
 @export var shotgun_pellet_count: int = 8
 @export var shotgun_spread_angle: float = 30.0
+@export var shotgun_damage: float = 50.0
 
 # Rifle properties
 @export var rifle_pellet_count: int = 1
 @export var rifle_spread_angle: float = 2.0
+@export var rifle_damage: float = 120.0
 @export var rifle_magazine_size: int = 1
 @export var rifle_reload_time: float = 1.0  # Time between shots
 
@@ -187,32 +192,60 @@ func shoot() -> void:
 	# Calculate base angle toward cursor
 	var mouse_pos = get_global_mouse_position()
 	var aim_angle = weapon_root.global_position.angle_to_point(mouse_pos)
+	var aim_direction = Vector2.RIGHT.rotated(aim_angle)
 
 	# Get reference for bullet placement
 	var scene_root = get_tree().current_scene
+	var space_state = get_world_2d().direct_space_state
 
 	# Get weapon-specific properties
 	var pellet_count = shotgun_pellet_count if current_weapon == WeaponType.SHOTGUN else rifle_pellet_count
 	var spread_angle = shotgun_spread_angle if current_weapon == WeaponType.SHOTGUN else rifle_spread_angle
-	var bullet_damage = 50.0 if current_weapon == WeaponType.SHOTGUN else 120.0
+	var bullet_damage = shotgun_damage if current_weapon == WeaponType.SHOTGUN else rifle_damage
 	
 	# Decrease rifle ammo
 	if current_weapon == WeaponType.RIFLE:
 		rifle_ammo -= 1
 		print("Rifle ammo: ", rifle_ammo, "/", rifle_magazine_size)
 
-	# Fire pellets
+	# Fire pellets (hitscan + visual tracers)
 	for i in range(pellet_count):
-		var bullet = BULLET.instantiate()
-		scene_root.add_child(bullet)
-		bullet.global_position = bullet_spawn_loc.global_position
-		bullet.damage = bullet_damage
-
-		# Evenly distributed random spread
+		# Calculate spread for this pellet
 		var spread = randf_range(-spread_angle * 0.5, spread_angle * 0.5)
 		var angle = aim_angle + deg_to_rad(spread)
+		var direction = Vector2.RIGHT.rotated(angle)
+		
+		# --- INSTANT HITSCAN RAYCAST ---
+		var ray_start = bullet_spawn_loc.global_position
+		var ray_end = ray_start + direction * max_weapon_range
+		
+		# Create query that checks walls (layer 1) and enemies (layer 2)
+		var query = PhysicsRayQueryParameters2D.create(ray_start, ray_end)
+		query.collision_mask = 3  # Binary 11 = layers 1 and 2
+		query.exclude = [self]
+		
+		var result = space_state.intersect_ray(query)
+		var hit_position = ray_end  # Default to max range
+		
+		if result:
+			hit_position = result.position
+			var collider = result.collider
+			
+			# Apply damage instantly if hit an enemy
+			if collider.has_method("take_damage"):
+				collider.take_damage(bullet_damage)
+		
+		# --- SPAWN VISUAL BULLET TRACER ---
+		var bullet = BULLET.instantiate()
+		scene_root.add_child(bullet)
+		bullet.global_position = ray_start
 		bullet.global_rotation = angle
-		bullet.direction = Vector2.RIGHT.rotated(angle)
+		bullet.direction = direction
+		bullet.damage = 0.0  # Damage already applied by hitscan
+		
+		# Calculate lifetime based on distance to hit
+		var distance_to_hit = ray_start.distance_to(hit_position)
+		bullet.lifetime = min(distance_to_hit / bullet.speed + 0.1, 2.0)
 	
 	# Auto-reload rifle if empty
 	if current_weapon == WeaponType.RIFLE and rifle_ammo <= 0:

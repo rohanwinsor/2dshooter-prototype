@@ -2,11 +2,12 @@ extends CharacterBody2D
 
 const SPEED = 100.0
 const HUNT_SPEED = 50.0
-const ATTACK_RANGE = 200.0
+const ATTACK_RANGE = 20.0
 const DETECTION_TIME = 2.0  # seconds player must stay visible
 
 @onready var sprite_2d: Sprite2D = $Sprite2D
 @onready var player_detection: RayCast2D = $PlayerDetection
+@onready var obstacle_detection: RayCast2D = $ObstacleDetection
 @onready var visible_on_screen_notifier_2d: VisibleOnScreenNotifier2D = $VisibleOnScreenNotifier2D
 @onready var weapon: AnimatedSprite2D = $Weapon
 
@@ -23,13 +24,27 @@ var camera: Camera2D
 var is_player_detected: bool = false
 var player_loc: Vector2
 var previous_state: State = State.IDLE
-
+var cool_down_not_seen_player = 4
 var player_visible_time: float = 0.0  # Time player stays in view
 
 enum State { IDLE, PATROL, HUNTING, ENGAGE }
 
 
+# --- Patrol parameters ---
+@export var patrol_distance: float = 10000.0
+@export var patrol_speed: float = 40.0
+@export var patrol_cycles: int = 3
+
+# --- Patrol state tracking ---
+var patrol_start_pos: Vector2
+var patrol_direction: int = 1
+
 func _ready():
+	# Only collide with world layer 1 (TileSet's physics_layer_0)
+	for i in range(1, 33):
+		obstacle_detection.set_collision_mask_value(i, i == 1)
+	obstacle_detection.collide_with_bodies = true
+	obstacle_detection.collide_with_areas = false
 	sprite_2d.modulate = spriteColor
 	health = max_health
 	if not camera:
@@ -45,6 +60,15 @@ func _ready():
 	weapon.visible = true
 	weapon.modulate.a = 0.0
 
+func check_for_obstacle(direction: Vector2) -> bool:
+	if visible_on_screen_notifier_2d.is_on_screen():
+		obstacle_detection.target_position = direction * 40
+		obstacle_detection.force_raycast_update()
+		if obstacle_detection.is_colliding():
+			return true
+	return false
+			
+	
 
 func check_for_player(direction, delta) -> void:
 	if visible_on_screen_notifier_2d.is_on_screen():
@@ -56,8 +80,10 @@ func check_for_player(direction, delta) -> void:
 				is_player_detected = true
 				player_loc = collider.global_position
 				player_visible_time += delta
+				cool_down_not_seen_player = 4
 				return
 	# If lost sight of player, reset timer
+	cool_down_not_seen_player = max(0, cool_down_not_seen_player - delta)
 	is_player_detected = false
 	player_visible_time = 0.0
 
@@ -71,7 +97,7 @@ func _physics_process(delta: float) -> void:
 		velocity += get_gravity() * delta
 
 	check_for_player(direction, delta)
-	
+	check_for_obstacle(direction)
 	# Update warning flash shader based on detection progress
 	if state in [State.IDLE, State.PATROL] and is_player_detected:
 		var flash_intensity = clamp(player_visible_time / DETECTION_TIME, 0.0, 1.0)
@@ -82,7 +108,8 @@ func _physics_process(delta: float) -> void:
 
 	if player_visible_time >= DETECTION_TIME and state in [State.IDLE, State.PATROL]:
 		change_state(State.HUNTING)
-
+	if cool_down_not_seen_player == 0:
+		change_state(State.PATROL)
 	match state:
 		State.IDLE:
 			handle_idle_state(delta)
@@ -103,11 +130,18 @@ func change_state(new_state: State) -> void:
 		return
 	previous_state = state
 	state = new_state
-	on_enter_state(new_state)
+	on_enter_state(new_state, previous_state)
 
 
-func on_enter_state(new_state: State) -> void:
+func on_enter_state(new_state: State, previous_state: State) -> void:
 	match new_state:
+		State.PATROL:
+			if previous_state == State.HUNTING:
+				velocity.x = 0
+				if sprite_2d.flip_h == true:
+					sprite_2d.flip_h = false
+				else:
+					sprite_2d.flip_h = true
 		State.HUNTING:
 			print("Raise weapon - prepare to engage player")
 			# Reset warning flash when entering hunt state
@@ -133,14 +167,25 @@ func handle_idle_state(delta: float) -> void:
 
 func handle_patrol_state(delta: float) -> void:
 	# TODO: Implement patrol logic
-	pass
+	velocity.x = patrol_direction * patrol_speed
+	sprite_2d.flip_h = patrol_direction < 0
+
+	var distance_from_start = abs(global_position.x - patrol_start_pos.x)
+	if distance_from_start >= patrol_distance:
+		patrol_direction *= -1
+		patrol_start_pos.x = global_position.x
+	print("Going to change dir", check_for_obstacle(Vector2(patrol_direction, 0)))
+	print(Vector2(patrol_direction, 0))
+	if check_for_obstacle(Vector2(patrol_direction, 0)):
+		patrol_direction *= -1
+		patrol_start_pos.x = global_position.x
 
 
 func handle_hunting_state(delta: float) -> void:
 	var dir = player_loc - global_position
 	var distance = dir.length()
 
-	if distance <= ATTACK_RANGE:
+	if distance <= ATTACK_RANGE and is_player_detected:
 		change_state(State.ENGAGE)
 		return
 

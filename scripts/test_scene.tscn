@@ -45,11 +45,12 @@ sources/0 = SubResource("TileSetAtlasSource_7kyx1")
 [node name="TestScene" type="Node2D"]
 
 [node name="Player" parent="." instance=ExtResource("1_1nsno")]
-position = Vector2(146, -140)
+position = Vector2(168, -140)
 collision_layer = 1
 
 [node name="Camera2D" type="Camera2D" parent="Player"]
-position = Vector2(11, -148)
+position = Vector2(-11, -148)
+offset = Vector2(10, 100)
 zoom = Vector2(2, 2)
 process_callback = 0
 
