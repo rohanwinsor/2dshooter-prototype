@@ -1,6 +1,18 @@
+class_name Stairs
 extends Area2D
+enum TYPE {UP, DOWN}
+@onready var marker_2d: Marker2D = $Marker2D
+
+@export var type = TYPE.UP
+@export var target_stair_zone: NodePath
+
+func get_target_stair() -> Stairs:
+	if target_stair_zone:
+		return get_node(target_stair_zone) as Stairs
+	return null
 
 func _ready() -> void:
+	add_to_group("Stair")
 	# Connect signals to detect when player enters/exits the stair zone
 	body_entered.connect(_on_body_entered)
 	body_exited.connect(_on_body_exited)

@@ -39,6 +39,11 @@ enum State { IDLE, PATROL, HUNTING, ENGAGE }
 var patrol_start_pos: Vector2
 var patrol_direction: int = 1
 
+# --Stair Navigation--
+var target_stair: Stairs
+var DOWN_THRESHOLD = -10
+var UP_THRESHOLD = 52
+
 func _ready():
 	# Only collide with world layer 1 (TileSet's physics_layer_0)
 	for i in range(1, 33):
@@ -96,29 +101,34 @@ func _physics_process(delta: float) -> void:
 	if not is_on_floor():
 		velocity += get_gravity() * delta
 
-	check_for_player(direction, delta)
-	check_for_obstacle(direction)
+	var player = get_tree().get_first_node_in_group("Player")
+	if player:
+		player_loc = player.global_position
+	#check_for_player(direction, delta)
+	#check_for_obstacle(direction)
+	navigate_to_postion(player_loc, delta)
+	if false:
 	# Update warning flash shader based on detection progress
-	if state in [State.IDLE, State.PATROL] and is_player_detected:
-		var flash_intensity = clamp(player_visible_time / DETECTION_TIME, 0.0, 1.0)
-		warning_shader.set_shader_parameter("flash_intensity", flash_intensity)
-	else:
-		# Reset flash when not detecting or in other states
-		warning_shader.set_shader_parameter("flash_intensity", 0.0)
+		if state in [State.IDLE, State.PATROL] and is_player_detected:
+			var flash_intensity = clamp(player_visible_time / DETECTION_TIME, 0.0, 1.0)
+			warning_shader.set_shader_parameter("flash_intensity", flash_intensity)
+		else:
+			# Reset flash when not detecting or in other states
+			warning_shader.set_shader_parameter("flash_intensity", 0.0)
 
-	if player_visible_time >= DETECTION_TIME and state in [State.IDLE, State.PATROL]:
-		change_state(State.HUNTING)
-	if cool_down_not_seen_player == 0:
-		change_state(State.PATROL)
-	match state:
-		State.IDLE:
-			handle_idle_state(delta)
-		State.PATROL:
-			handle_patrol_state(delta)
-		State.HUNTING:
-			handle_hunting_state(delta)
-		State.ENGAGE:
-			handle_engage_state(delta)
+		if player_visible_time >= DETECTION_TIME and state in [State.IDLE, State.PATROL]:
+			change_state(State.HUNTING)
+		if cool_down_not_seen_player == 0:
+			change_state(State.PATROL)
+		match state:
+			State.IDLE:
+				handle_idle_state(delta)
+			State.PATROL:
+				handle_patrol_state(delta)
+			State.HUNTING:
+				handle_hunting_state(delta)
+			State.ENGAGE:
+				handle_engage_state(delta)
 
 	move_and_slide()
 
@@ -199,8 +209,66 @@ func handle_engage_state(delta: float) -> void:
 	# TODO: Shooting logic goes here
 	velocity.x = 0
 	weapon.play("shoot")
+func find_nearest_stairs():
+	
+	var stairs = get_tree().get_nodes_in_group("Stair")
+	var nearest_up_stairs = null
+	var nearest_down_stairs = null
+	for stair in stairs:
+		if stair.type == stair.TYPE.UP:
+			if nearest_up_stairs == null:
+				nearest_up_stairs = stair
+			if stair.global_position.distance_to(global_position) < nearest_up_stairs.global_position.distance_to(global_position):
+				nearest_up_stairs = stair
+		if stair.type == stair.TYPE.DOWN:
+			if nearest_down_stairs == null:
+				nearest_down_stairs = stair
+			if stair.global_position.distance_to(global_position) < nearest_down_stairs.global_position.distance_to(global_position):
+				nearest_down_stairs = stair
+	return [nearest_up_stairs, nearest_down_stairs]
 
-
+func navigate_to_postion(postion, delta):	
+	var result = find_nearest_stairs()
+	var nearest_up_stairs = result[0]
+	var nearest_down_stairs = result[1]
+	var h_distance = global_position.x - postion.x
+	var v_distance = global_position.y - postion.y
+	var distance = 1 if h_distance <= 0 else -1
+	if target_stair:
+		use_stair()
+		h_distance = global_position.x - target_stair.marker_2d.global_position.x
+		distance = 1 if h_distance <= 0 else -1
+		velocity.x = distance * SPEED
+		if abs(h_distance) <= 10:
+			stop_using_stair()
+			target_stair = null
+			velocity.x = 0
+	elif DOWN_THRESHOLD <= v_distance and v_distance <= UP_THRESHOLD:
+		# Player Same Level
+		if abs(h_distance) >= 50:
+			velocity.x = distance * SPEED
+			sprite_2d.flip_h = distance < 0
+		else:
+			velocity.x = 0
+			return
+	elif v_distance >= UP_THRESHOLD:
+		var distance_2_marker = global_position.x - nearest_up_stairs.global_position.x
+		var direction = 1 if distance_2_marker <= 0 else -1
+		if abs(distance_2_marker) <= 1:
+				target_stair = nearest_up_stairs.get_target_stair()
+				velocity.x = 0
+		else:
+			velocity.x = direction * SPEED
+	elif v_distance <= DOWN_THRESHOLD:
+		var distance_2_marker = global_position.x - nearest_down_stairs.global_position.x
+		var direction = 1 if distance_2_marker <= 0 else -1
+		if abs(distance_2_marker) <= 1:
+				target_stair = nearest_down_stairs.get_target_stair()
+				velocity.x = 0
+		else:
+			velocity.x = direction * SPEED
+	else:
+		print("Player Unknown")
 # ---------- MISC ---------- #
 
 func take_damage(damage: float) -> void:
@@ -213,3 +281,24 @@ func take_damage(damage: float) -> void:
 func die() -> void:
 	print("Enemy died!")
 	queue_free()
+
+
+func use_stair() -> void:
+	enable_stair_collision()
+	disable_landing_collision()
+	
+func stop_using_stair() -> void:
+	disable_stair_collision()
+	enable_landing_collision()
+	
+func enable_stair_collision() -> void:
+	set_collision_mask_value(2, true)   # Enable collision with Layer 2 (stairs)
+
+func disable_stair_collision() -> void:
+	set_collision_mask_value(2, false)  # Disable collision with Layer 2 (stairs)
+
+func enable_landing_collision() -> void:
+	set_collision_mask_value(3, true)   # Enable collision with Layer 3 (landing platforms)
+
+func disable_landing_collision() -> void:
+	set_collision_mask_value(3, false)  # Disable collision with Layer 3 (landing platforms)

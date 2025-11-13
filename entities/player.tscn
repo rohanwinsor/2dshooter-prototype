@@ -391,12 +391,12 @@ collision_mask = 5
 script = ExtResource("1_b0kkn")
 
 [node name="PlayerSprite" type="Sprite2D" parent="."]
-position = Vector2(0, -32)
+position = Vector2(0, -16)
 scale = Vector2(0.5, 0.5)
 texture = ExtResource("1_merdl")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
-position = Vector2(-0.25, -29.5)
+position = Vector2(-0.25, -13.5)
 shape = SubResource("RectangleShape2D_b0kkn")
 
 [node name="ShootTimer" type="Timer" parent="."]
@@ -413,7 +413,7 @@ texture = SubResource("GradientTexture2D_oprnr")
 texture_scale = 100.0
 
 [node name="WeaponRoot" type="Node2D" parent="."]
-position = Vector2(5, -34)
+position = Vector2(5, -17)
 
 [node name="BulletSpawnLoc" type="Marker2D" parent="WeaponRoot"]
 position = Vector2(21.000004, -2)
