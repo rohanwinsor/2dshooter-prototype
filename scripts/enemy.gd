@@ -44,7 +44,13 @@ var target_stair: Stairs
 var DOWN_THRESHOLD = -10
 var UP_THRESHOLD = 52
 
+# -- not_died
+enum AliveOrDead {Alive, DEAD}
+var alive_or_dead = AliveOrDead.Alive
+var corpse_scene = load("res://entities/enemy_corpse.tscn")
+var can_move = true
 func _ready():
+	add_to_group("Enemy")
 	# Only collide with world layer 1 (TileSet's physics_layer_0)
 	for i in range(1, 33):
 		obstacle_detection.set_collision_mask_value(i, i == 1)
@@ -94,6 +100,8 @@ func check_for_player(direction, delta) -> void:
 
 
 func _physics_process(delta: float) -> void:
+	if can_move == false:
+		return
 	var direction := Vector2(1, 0)
 	if sprite_2d.flip_h:
 		direction.x = -1
@@ -106,7 +114,7 @@ func _physics_process(delta: float) -> void:
 		player_loc = player.global_position
 	#check_for_player(direction, delta)
 	#check_for_obstacle(direction)
-	navigate_to_postion(player_loc, delta)
+	#navigate_to_postion(player_loc, delta)
 	if false:
 	# Update warning flash shader based on detection progress
 		if state in [State.IDLE, State.PATROL] and is_player_detected:
@@ -153,7 +161,7 @@ func on_enter_state(new_state: State, previous_state: State) -> void:
 				else:
 					sprite_2d.flip_h = true
 		State.HUNTING:
-			print("Raise weapon - prepare to engage player")
+			
 			# Reset warning flash when entering hunt state
 			warning_shader.set_shader_parameter("flash_intensity", 0.0)
 			var tween = create_tween().set_parallel(true)
@@ -161,7 +169,7 @@ func on_enter_state(new_state: State, previous_state: State) -> void:
 			# TODO: Play weapon raise animation here
 
 		State.ENGAGE:
-			print("Player in range - prepare to shoot")
+			print("DO ENGAGE")
 			# TODO: Trigger attack animation here
 
 		State.IDLE, State.PATROL:
@@ -184,8 +192,8 @@ func handle_patrol_state(delta: float) -> void:
 	if distance_from_start >= patrol_distance:
 		patrol_direction *= -1
 		patrol_start_pos.x = global_position.x
-	print("Going to change dir", check_for_obstacle(Vector2(patrol_direction, 0)))
-	print(Vector2(patrol_direction, 0))
+	
+	
 	if check_for_obstacle(Vector2(patrol_direction, 0)):
 		patrol_direction *= -1
 		patrol_start_pos.x = global_position.x
@@ -205,10 +213,14 @@ func handle_hunting_state(delta: float) -> void:
 
 
 func handle_engage_state(delta: float) -> void:
-	print("Shoot player if visible")
+	
 	# TODO: Shooting logic goes here
+	# When implementing shooting, calculate firing distance and pass to bullet:
+	# var distance_to_player = global_position.distance_to(player_loc)
+	# bullet.firing_distance = distance_to_player
 	velocity.x = 0
 	weapon.play("shoot")
+
 func find_nearest_stairs():
 	
 	var stairs = get_tree().get_nodes_in_group("Stair")
@@ -268,18 +280,40 @@ func navigate_to_postion(postion, delta):
 		else:
 			velocity.x = direction * SPEED
 	else:
-		print("Player Unknown")
+		print("UNKNOWN")
 # ---------- MISC ---------- #
 
-func take_damage(damage: float) -> void:
+func take_damage(damage: float, direction: Vector2, distance: float = 0.0) -> void:
+	
+	
+	
 	health -= damage
-	print("Enemy took ", damage, " damage. Health: ", health, "/", max_health)
-	if health <= 0:
-		die()
+	
+	if health <= 0 and alive_or_dead == AliveOrDead.Alive:
+		die(damage, direction, distance)
 
 
-func die() -> void:
-	print("Enemy died!")
+func die(damage, direction: Vector2, distance: float):
+	alive_or_dead = AliveOrDead.DEAD
+	# Hide current enemy immediately to avoid flicker
+	sprite_2d.visible = false
+	weapon.visible = false
+
+	var hit_dir = (player_loc - global_position).normalized()
+
+	var corpse = corpse_scene.instantiate()
+
+	corpse.global_position = global_position
+	corpse.global_rotation = global_rotation
+
+	get_parent().add_child(corpse)
+
+	# Very strong knockback
+	var force = direction * 10.0 * min(damage, 50)
+	corpse.apply_central_impulse(force)
+
+	#corpse.start_fade_and_dddcleanup()
+	
 	queue_free()
 
 

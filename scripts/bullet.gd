@@ -8,6 +8,7 @@ extends Area2D
 var direction: Vector2 = Vector2.ZERO
 var velocity: Vector2 = Vector2.ZERO
 var has_dealt_damage: bool = false  # Prevent multiple damage applications
+var firing_distance: float = 0.0  # Distance from shooter to target
 
 func _ready() -> void:
 	# Auto-despawn after lifetime
@@ -47,7 +48,7 @@ func _on_body_entered(body: Node2D) -> void:
 		return
 	
 	if body.has_method("take_damage"):
-		body.take_damage(damage)
+		body.take_damage(damage, direction, firing_distance)
 		has_dealt_damage = true
 		explode()
 
@@ -56,7 +57,7 @@ func _on_area_entered(area: Area2D) -> void:
 		return
 	
 	if area.has_method("take_damage"):
-		area.take_damage(damage)
+		area.take_damage(damage, direction, firing_distance)
 		has_dealt_damage = true
 		explode()
 

@@ -4,7 +4,6 @@ const BULLET = preload("res://entities/bullet.tscn")
 
 enum WeaponType { SHOTGUN, RIFLE }
 
-@export var walk_speed: float = 120.0
 @export var run_speed: float = 220.0
 @export var jump_velocity: float = -420.0
 @export var gravity: float = 980.0
@@ -30,7 +29,7 @@ var current_weapon: WeaponType = WeaponType.SHOTGUN
 var rifle_ammo: int = 1
 var is_reloading: bool = false
 var can_use_stair: bool = false
-
+var can_move = true
 @onready var shotgun: AnimatedSprite2D = $WeaponRoot/ShootGun
 @onready var rifle: AnimatedSprite2D = $WeaponRoot/Rifle
 @onready var weapon_root: Node2D = $WeaponRoot
@@ -73,13 +72,15 @@ func _ready() -> void:
 
 
 func _physics_process(delta: float) -> void:
+	if can_move == false:
+		return
 	# Gravity
 	if not is_on_floor():
 		velocity.y += gravity * delta
 
 	# Horizontal movement
 	var direction := Input.get_action_strength("right") - Input.get_action_strength("left")
-	var current_speed = run_speed if Input.is_action_pressed("shift") else walk_speed
+	var current_speed = run_speed
 	velocity.x = direction * current_speed
 	
 	## Jump
@@ -151,8 +152,8 @@ func _physics_process(delta: float) -> void:
 	if can_shoot and not is_reloading and current_gun.animation != "idle":
 		current_gun.play("idle")
 		
-	if (Input.is_action_pressed("up") or Input.is_action_pressed("down")) and can_use_stair:
-		print("can_use_stair ::", can_use_stair)
+	if (Input.is_action_pressed("shift")) and can_use_stair:
+		
 		enable_stair_collision()
 		disable_landing_collision()
 
@@ -167,12 +168,12 @@ func switch_weapon(weapon: WeaponType) -> void:
 	if current_weapon == WeaponType.SHOTGUN:
 		current_gun = shotgun
 		shotgun.visible = true
-		print("Switched to Shotgun")
+		
 	else:  # RIFLE
 		current_gun = rifle
 		rifle.visible = true
 		rifle_ammo = rifle_magazine_size
-		print("Switched to Rifle")
+		
 	
 	# Reset animation state
 	current_gun.play("idle")
@@ -188,6 +189,9 @@ func shoot() -> void:
 	muzzle_flash.enabled = true
 	muzzle_flash.energy = randf_range(2.5, 3.5)
 	get_tree().create_timer(0.08).timeout.connect(func(): muzzle_flash.enabled = false)
+	
+	var shake_intensity = 10.0 if current_weapon == WeaponType.SHOTGUN else 6.0
+	shake_camera(shake_intensity, 0.08)
 
 	# Calculate base angle toward cursor
 	var mouse_pos = get_global_mouse_position()
@@ -206,7 +210,7 @@ func shoot() -> void:
 	# Decrease rifle ammo
 	if current_weapon == WeaponType.RIFLE:
 		rifle_ammo -= 1
-		print("Rifle ammo: ", rifle_ammo, "/", rifle_magazine_size)
+		
 
 	# Fire pellets (hitscan + visual tracers)
 	for i in range(pellet_count):
@@ -233,7 +237,8 @@ func shoot() -> void:
 			
 			# Apply damage instantly if hit an enemy
 			if collider.has_method("take_damage"):
-				collider.take_damage(bullet_damage)
+				var distance_to_target = ray_start.distance_to(hit_position)
+				collider.take_damage(bullet_damage, direction, distance_to_target)
 		
 		# --- SPAWN VISUAL BULLET TRACER ---
 		var bullet = BULLET.instantiate()
@@ -245,6 +250,7 @@ func shoot() -> void:
 		
 		# Calculate lifetime based on distance to hit
 		var distance_to_hit = ray_start.distance_to(hit_position)
+		bullet.firing_distance = distance_to_hit
 		bullet.lifetime = min(distance_to_hit / bullet.speed + 0.1, 2.0)
 	
 	# Auto-reload rifle if empty
@@ -257,7 +263,7 @@ func reload_rifle() -> void:
 		
 	is_reloading = true
 	can_shoot = false
-	print("Reloading rifle...")
+	
 	
 	# Wait for reload time
 	await get_tree().create_timer(rifle_reload_time).timeout
@@ -265,7 +271,7 @@ func reload_rifle() -> void:
 	rifle_ammo = rifle_magazine_size
 	is_reloading = false
 	can_shoot = true
-	print("Rifle reloaded!")
+	
 
 func _on_gun_animation_finished() -> void:
 	if current_gun.animation == "shoot":
@@ -281,33 +287,33 @@ func enable_stair_collision() -> void:
 	if not using_stairs:
 		set_collision_mask_value(2, true)   # Enable collision with Layer 2 (stairs)
 		using_stairs = true
-		print("Stairs enabled | Mask: ", collision_mask, " (binary: ", String.num_int64(collision_mask, 2).pad_zeros(3), ")")
+		
 
 func disable_stair_collision() -> void:
 	if using_stairs:
 		set_collision_mask_value(2, false)  # Disable collision with Layer 2 (stairs)
 		using_stairs = false
-		print("Stairs disabled | Mask: ", collision_mask, " (binary: ", String.num_int64(collision_mask, 2).pad_zeros(3), ")")
+		
 
 func enable_landing_collision() -> void:
 	if not landing_enabled:
 		set_collision_mask_value(3, true)   # Enable collision with Layer 3 (landing platforms)
 		landing_enabled = true
-		print("Landing enabled | Mask: ", collision_mask, " (binary: ", String.num_int64(collision_mask, 2).pad_zeros(3), ")")
+		
 
 func disable_landing_collision() -> void:
 	if landing_enabled:
 		set_collision_mask_value(3, false)  # Disable collision with Layer 3 (landing platforms)
 		landing_enabled = false
-		print("Landing disabled | Mask: ", collision_mask, " (binary: ", String.num_int64(collision_mask, 2).pad_zeros(3), ")")
+		
 
 
 
 # Called by StairZone when player enters
 func enter_stair_zone(zone: Area2D) -> void:
-	print("enter stair zone")
+	
 	can_use_stair = true
-	if not (Input.is_action_pressed("up") or Input.is_action_pressed("down")):
+	if not (Input.is_action_pressed("shift")):
 		# if the player is not pressing the up or down button we can disable the stairs
 		enable_landing_collision()
 		disable_stair_collision()
@@ -315,6 +321,15 @@ func enter_stair_zone(zone: Area2D) -> void:
 
 # Called by StairZone when player enters
 func exit_stair_zone(zone: Area2D) -> void:
-	print("exit stair zone")
+	
 	can_use_stair = false
+		
+func shake_camera(intensity: float = 6.0, duration: float = 0.08) -> void:
+	var cam := get_viewport().get_camera_2d()
+	if cam == null:
+		return
+	var original := cam.offset
+	var t := create_tween()
+	t.tween_property(cam, "offset", original + Vector2(randf_range(-1.0, 1.0), randf_range(-1.0, 1.0)) * intensity, duration * 0.5).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	t.tween_property(cam, "offset", original, duration * 0.5).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
 		
