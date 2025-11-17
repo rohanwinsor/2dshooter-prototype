@@ -1,7 +1,7 @@
 extends Area2D
 
 # Visual tracer properties
-@export var speed: float = 8000.0
+@export var speed: float = 3000.0
 @export var lifetime: float = 2.0
 @export var damage: float = 10.0
 
