@@ -75,7 +75,7 @@ animations = [{
 }]
 
 [node name="Enemy" type="CharacterBody2D"]
-collision_layer = 2
+collision_layer = 16
 collision_mask = 5
 script = ExtResource("1_pqhw6")
 spriteColor = Color(0.99969465, 0.043425985, 0.02404285, 1)
@@ -92,12 +92,21 @@ shape = SubResource("RectangleShape2D_pqhw6")
 [node name="PlayerDetection" type="RayCast2D" parent="."]
 position = Vector2(0, -13)
 target_position = Vector2(46, 0)
+collision_mask = 9
 
 [node name="VisibleOnScreenNotifier2D" type="VisibleOnScreenNotifier2D" parent="."]
 position = Vector2(0, -13)
 
 [node name="Weapon" type="AnimatedSprite2D" parent="."]
+visible = false
 position = Vector2(17.999998, -16.999996)
+scale = Vector2(0.06, 0.06)
+sprite_frames = SubResource("SpriteFrames_ayeso")
+animation = &"shoot"
+
+[node name="WeaponVibe" type="AnimatedSprite2D" parent="."]
+position = Vector2(8, -7.000001)
+rotation = 0.8568473
 scale = Vector2(0.06, 0.06)
 sprite_frames = SubResource("SpriteFrames_ayeso")
 animation = &"shoot"

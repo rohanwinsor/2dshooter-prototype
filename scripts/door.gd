@@ -3,6 +3,7 @@ extends Node2D
 @onready var animated_sprite_2d: AnimatedSprite2D = $AnimatedSprite2D
 @onready var door_action_region: Area2D = $DoorActionRegion
 @onready var door_collision: Area2D = $DoorCollision
+@onready var door_solid_shape: CollisionShape2D = $DoorSolid/DoorSolidShape
 
 enum State {OPEN, CLOSE}
 var state
@@ -12,6 +13,7 @@ func _ready() -> void:
 	state = State.CLOSE
 	door_action_region.body_entered.connect(_body_entered)
 	door_action_region.body_exited.connect(_body_exited)
+	door_solid_shape.disabled = false
 	
 	
 func _body_entered(body: Node2D):
@@ -21,6 +23,7 @@ func _body_entered(body: Node2D):
 		if state == State.CLOSE:
 			body.can_move = false
 			animated_sprite_2d.play("openning")
+			door_solid_shape.set_deferred("disabled", true)
 			await animated_sprite_2d.animation_finished
 			animated_sprite_2d.play("open")
 			state = State.OPEN
@@ -37,6 +40,7 @@ func _body_exited(body: Node2D):
 			await animated_sprite_2d.animation_finished
 			animated_sprite_2d.play("close")
 			state = State.CLOSE
+			door_solid_shape.set_deferred("disabled", false)
 			print("HERE?")
 
 

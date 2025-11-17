@@ -91,6 +91,9 @@ sprite_frames = SubResource("SpriteFrames_k4wox")
 animation = &"openning"
 
 [node name="DoorActionRegion" type="Area2D" parent="."]
+visible = false
+collision_layer = 0
+collision_mask = 24
 
 [node name="DoorActivationRegion" type="CollisionShape2D" parent="DoorActionRegion"]
 position = Vector2(-1, 0.5)
@@ -99,5 +102,12 @@ shape = SubResource("RectangleShape2D_lqnsx")
 [node name="DoorCollision" type="Area2D" parent="."]
 
 [node name="DoorCollision" type="CollisionShape2D" parent="DoorCollision"]
+position = Vector2(-1.5, 1.5)
+shape = SubResource("RectangleShape2D_ro7at")
+
+[node name="DoorSolid" type="StaticBody2D" parent="."]
+collision_mask = 0
+
+[node name="DoorSolidShape" type="CollisionShape2D" parent="DoorSolid"]
 position = Vector2(-1.5, 1.5)
 shape = SubResource("RectangleShape2D_ro7at")

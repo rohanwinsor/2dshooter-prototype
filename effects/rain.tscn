@@ -1,0 +1,41 @@
+[gd_scene load_steps=8 format=3 uid="uid://bdib7ji3hf7el"]
+
+[sub_resource type="Curve" id="Curve_6ust0"]
+_data = [Vector2(0.006369427, 0.03457117), 0.0, 0.0, 0, 0, Vector2(0.3726115, 0.1843791), 0.0, 0.0, 0, 0, Vector2(0.61783445, 0.1843791), 0.0, 0.0, 0, 0, Vector2(0.9840765, 0.03457117), 0.0, 0.0, 0, 0]
+point_count = 4
+
+[sub_resource type="CurveTexture" id="CurveTexture_i0xyo"]
+curve = SubResource("Curve_6ust0")
+
+[sub_resource type="Curve" id="Curve_o55jp"]
+_limits = [0.0, 3.0, 0.0, 1.0]
+_data = [Vector2(0, 1), 0.0, 0.0, 0, 0, Vector2(1, 1), 0.0, 0.0, 0, 0]
+point_count = 2
+
+[sub_resource type="Curve" id="Curve_hvhry"]
+_limits = [0.0, 30.0, 0.0, 1.0]
+_data = [Vector2(0, 1), 0.0, 0.0, 0, 0, Vector2(0.95454544, 21.910114), 0.0, 0.0, 0, 0]
+point_count = 2
+
+[sub_resource type="Curve" id="Curve_e5ouy"]
+_limits = [0.0, 3.0, 0.0, 1.0]
+_data = [Vector2(0, 1), 0.0, 0.0, 0, 0, Vector2(1, 1), 0.0, 0.0, 0, 0]
+point_count = 2
+
+[sub_resource type="CurveXYZTexture" id="CurveXYZTexture_6ust0"]
+curve_x = SubResource("Curve_o55jp")
+curve_y = SubResource("Curve_hvhry")
+curve_z = SubResource("Curve_e5ouy")
+
+[sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_o55jp"]
+particle_flag_disable_z = true
+emission_shape_offset = Vector3(0, -200, 0)
+emission_shape = 3
+emission_box_extents = Vector3(350, 1, 1)
+gravity = Vector3(0, 3000, 0)
+scale_over_velocity_curve = SubResource("CurveXYZTexture_6ust0")
+alpha_curve = SubResource("CurveTexture_i0xyo")
+
+[node name="GPUParticles2D" type="GPUParticles2D"]
+amount = 500
+process_material = SubResource("ParticleProcessMaterial_o55jp")

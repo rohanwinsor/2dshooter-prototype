@@ -19,7 +19,7 @@ func _ready() -> void:
 	
 	# Set collision layers
 	collision_layer = 0  # This area doesn't exist on any layer
-	collision_mask = 1   # Detects bodies on layer 1 (player)
+	collision_mask = 24  # Detects bodies on layers 4 (player) and 5 (enemy)
 
 func _on_body_entered(body: Node2D) -> void:
 	if body.has_method("enter_stair_zone"):

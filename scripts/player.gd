@@ -191,7 +191,7 @@ func shoot() -> void:
 	get_tree().create_timer(0.08).timeout.connect(func(): muzzle_flash.enabled = false)
 	
 	var shake_intensity = 10.0 if current_weapon == WeaponType.SHOTGUN else 6.0
-	shake_camera(shake_intensity, 0.08)
+	shake_camera(shake_intensity * 10, 0.08)
 
 	# Calculate base angle toward cursor
 	var mouse_pos = get_global_mouse_position()
@@ -225,11 +225,15 @@ func shoot() -> void:
 		
 		# Create query that checks walls (layer 1) and enemies (layer 2)
 		var query = PhysicsRayQueryParameters2D.create(ray_start, ray_end)
-		query.collision_mask = 3  # Binary 11 = layers 1 and 2
-		query.exclude = [self]
+		query.collision_mask = 17  # Binary 10001 = layers 1 and 5
+		var exclude_nodes: Array = [self]
+		for c in get_tree().get_nodes_in_group("Corpse"):
+			exclude_nodes.append(c)
+		query.exclude = exclude_nodes
 		
 		var result = space_state.intersect_ray(query)
 		var hit_position = ray_end  # Default to max range
+		var actual_bullet_distance = ray_start.distance_to(hit_position)
 		
 		if result:
 			hit_position = result.position
@@ -239,6 +243,14 @@ func shoot() -> void:
 			if collider.has_method("take_damage"):
 				var distance_to_target = ray_start.distance_to(hit_position)
 				collider.take_damage(bullet_damage, direction, distance_to_target)
+		
+		# Check for near misses on all enemies
+		for enemy in get_tree().get_nodes_in_group("Enemy"):
+			if enemy.has_method("is_bullet_near"):
+				if enemy.is_bullet_near(ray_start, direction, actual_bullet_distance, 50.0):
+					# Bullet passed near this enemy - trigger alert/suppression
+					if enemy.has_method("on_bullet_near"):
+						enemy.on_bullet_near()
 		
 		# --- SPAWN VISUAL BULLET TRACER ---
 		var bullet = BULLET.instantiate()

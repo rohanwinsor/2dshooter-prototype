@@ -49,9 +49,13 @@ enum AliveOrDead {Alive, DEAD}
 var alive_or_dead = AliveOrDead.Alive
 var corpse_scene = load("res://entities/enemy_corpse.tscn")
 var can_move = true
+
+# -- BLOOD --
+var blood: PackedScene = load("res://effects/blood.tscn")
+
 func _ready():
 	add_to_group("Enemy")
-	# Only collide with world layer 1 (TileSet's physics_layer_0)
+	# Configure obstacle detection - only collide with world layer 1 (TileSet's physics_layer_0)
 	for i in range(1, 33):
 		obstacle_detection.set_collision_mask_value(i, i == 1)
 	obstacle_detection.collide_with_bodies = true
@@ -82,11 +86,15 @@ func check_for_obstacle(direction: Vector2) -> bool:
 	
 
 func check_for_player(direction, delta) -> void:
+	print("Checking for Player ::", is_player_detected)
 	if visible_on_screen_notifier_2d.is_on_screen():
+		print("visible_on_screen_notifier_2d ::", visible_on_screen_notifier_2d)
+		print("player_detection.is_colliding() ::", player_detection.is_colliding())
 		player_detection.target_position = direction * detection_distance
 		player_detection.force_raycast_update()
 		if player_detection.is_colliding():
 			var collider = player_detection.get_collider()
+			print("Colliding with player ::", collider.is_in_group("Player"))
 			if collider.is_in_group("Player"):
 				is_player_detected = true
 				player_loc = collider.global_position
@@ -95,7 +103,7 @@ func check_for_player(direction, delta) -> void:
 				return
 	# If lost sight of player, reset timer
 	cool_down_not_seen_player = max(0, cool_down_not_seen_player - delta)
-	is_player_detected = false
+	#is_player_detected = false
 	player_visible_time = 0.0
 
 
@@ -112,9 +120,11 @@ func _physics_process(delta: float) -> void:
 	var player = get_tree().get_first_node_in_group("Player")
 	if player:
 		player_loc = player.global_position
-	#check_for_player(direction, delta)
+	
+	check_for_player(direction, delta)
 	#check_for_obstacle(direction)
-	#navigate_to_postion(player_loc, delta)
+	if is_player_detected:
+		navigate_to_postion(player_loc, delta)
 	if false:
 	# Update warning flash shader based on detection progress
 		if state in [State.IDLE, State.PATROL] and is_player_detected:
@@ -294,6 +304,19 @@ func take_damage(damage: float, direction: Vector2, distance: float = 0.0) -> vo
 
 
 func die(damage, direction: Vector2, distance: float):
+	var blood_instance = blood.instantiate()
+	get_tree().current_scene.add_child(blood_instance)
+	var impact_dir := direction.normalized()
+	if impact_dir == Vector2.ZERO:
+		impact_dir = Vector2.RIGHT  # fallback if something calls with zero vector
+
+	var horizontal_sign := -1.0 if impact_dir.x < 0.0 else 1.0
+	var spawn_offset := Vector2(horizontal_sign * 8.0, -25.0)
+
+	blood_instance.global_position = global_position + spawn_offset
+	blood_instance.rotation = 0.0 if horizontal_sign >= 0.0 else PI
+
+	#blood_instance.rotation = 
 	alive_or_dead = AliveOrDead.DEAD
 	# Hide current enemy immediately to avoid flicker
 	sprite_2d.visible = false
@@ -311,9 +334,8 @@ func die(damage, direction: Vector2, distance: float):
 	# Very strong knockback
 	var force = direction * 10.0 * min(damage, 50)
 	corpse.apply_central_impulse(force)
-
-	#corpse.start_fade_and_dddcleanup()
-	
+	corpse.can_kill = true
+	#corpse.start_fade_and_dddcleanup()		
 	queue_free()
 
 
@@ -336,3 +358,46 @@ func enable_landing_collision() -> void:
 
 func disable_landing_collision() -> void:
 	set_collision_mask_value(3, false)  # Disable collision with Layer 3 (landing platforms)
+
+# Check if a bullet was shot near this enemy
+# Parameters:
+#   bullet_start: Starting position of the bullet (Vector2)
+#   bullet_direction: Normalized direction vector of the bullet (Vector2)
+#   bullet_max_distance: Maximum travel distance of the bullet (float)
+#   alert_radius: How close the bullet needs to pass to trigger (float, default 50.0)
+# Returns: true if bullet passes within alert_radius of enemy
+func is_bullet_near(bullet_start: Vector2, bullet_direction: Vector2, bullet_max_distance: float, alert_radius: float = 50.0) -> bool:
+	# Calculate closest point on bullet trajectory to enemy position
+	var to_enemy = global_position - bullet_start
+	var projection = to_enemy.dot(bullet_direction)
+	
+	# Clamp projection to bullet's travel range [0, max_distance]
+	projection = clamp(projection, 0.0, bullet_max_distance)
+	
+	# Find closest point on the line segment
+	var closest_point = bullet_start + bullet_direction * projection
+	
+	# Calculate distance from enemy to closest point
+	var distance_to_trajectory = global_position.distance_to(closest_point)
+	
+	# Return true if within alert radius
+	return distance_to_trajectory <= alert_radius
+
+# Called when a bullet passes near this enemy (optional callback)
+# You can customize this to trigger specific behaviors like:
+# - Entering alert state
+# - Playing suppression animations
+# - Taking cover
+# - Returning fire
+func on_bullet_near() -> void:
+	is_player_detected = true
+	# # Example: Enter hunting state if currently idle/patrolling
+	# if state in [State.IDLE, State.PATROL]:
+	# 	change_state(State.HUNTING)
+	
+	# # Example: Flash warning shader briefly
+	# if warning_shader:
+	# 	warning_shader.set_shader_parameter("flash_intensity", 0.5)
+	# 	get_tree().create_timer(0.2).timeout.connect(
+	# 		func(): warning_shader.set_shader_parameter("flash_intensity", 0.0)
+	# 	)

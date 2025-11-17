@@ -92,6 +92,7 @@ use_stairs={
 
 textures/canvas_textures/default_texture_filter=0
 viewport/hdr_2d=true
+viewport/transparent_background=true
 environment/defaults/default_environment="res://default_env.tres"
 
 [rendering.glow]

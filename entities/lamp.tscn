@@ -1,0 +1,10 @@
+[gd_scene load_steps=3 format=3 uid="uid://dfy41at34g1iv"]
+
+[ext_resource type="Texture2D" uid="uid://cdchdl1y1dt1c" path="res://assets/decoration/lamp.png" id="1_eus41"]
+[ext_resource type="Texture2D" uid="uid://mc184y71uxkp" path="res://assets/point_light_texture/lamp_texture.png" id="2_namv7"]
+
+[node name="Lamp" type="Sprite2D"]
+texture = ExtResource("1_eus41")
+
+[node name="PointLight2D" type="PointLight2D" parent="."]
+texture = ExtResource("2_namv7")

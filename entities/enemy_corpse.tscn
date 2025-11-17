@@ -7,6 +7,8 @@
 size = Vector2(8, 26)
 
 [node name="EnemyCorpse" type="RigidBody2D"]
+collision_layer = 16
+collision_mask = 5
 script = ExtResource("1_evou7")
 
 [node name="Sprite2D" type="Sprite2D" parent="."]
