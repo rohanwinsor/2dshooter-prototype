@@ -50,9 +50,6 @@ var alive_or_dead = AliveOrDead.Alive
 var corpse_scene = load("res://entities/enemy_corpse.tscn")
 var can_move = true
 
-# -- BLOOD --
-var blood: PackedScene = load("res://effects/blood.tscn")
-
 func _ready():
 	add_to_group("Enemy")
 	# Configure obstacle detection - only collide with world layer 1 (TileSet's physics_layer_0)
@@ -86,7 +83,6 @@ func check_for_obstacle(direction: Vector2) -> bool:
 	
 
 func check_for_player(direction, delta) -> void:
-	print("Checking for Player ::", is_player_detected)
 	if visible_on_screen_notifier_2d.is_on_screen():
 		print("visible_on_screen_notifier_2d ::", visible_on_screen_notifier_2d)
 		print("player_detection.is_colliding() ::", player_detection.is_colliding())
@@ -304,18 +300,12 @@ func take_damage(damage: float, direction: Vector2, distance: float = 0.0) -> vo
 
 
 func die(damage, direction: Vector2, distance: float):
-	var blood_instance = blood.instantiate()
-	get_tree().current_scene.add_child(blood_instance)
 	var impact_dir := direction.normalized()
 	if impact_dir == Vector2.ZERO:
 		impact_dir = Vector2.RIGHT  # fallback if something calls with zero vector
 
 	var horizontal_sign := -1.0 if impact_dir.x < 0.0 else 1.0
 	var spawn_offset := Vector2(horizontal_sign * 8.0, -25.0)
-
-	blood_instance.global_position = global_position + spawn_offset
-	blood_instance.rotation = 0.0 if horizontal_sign >= 0.0 else PI
-
 	#blood_instance.rotation = 
 	alive_or_dead = AliveOrDead.DEAD
 	# Hide current enemy immediately to avoid flicker
