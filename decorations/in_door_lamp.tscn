@@ -1,0 +1,12 @@
+[gd_scene load_steps=3 format=3 uid="uid://ddtmy406pxuo1"]
+
+[ext_resource type="Texture2D" uid="uid://lrr3bnxqc1xj" path="res://assets/decoration/indoorlamp.png" id="1_f7tqy"]
+[ext_resource type="Texture2D" uid="uid://2npsyf7auwul" path="res://assets/point_light_texture/indoorlamp_texture.png" id="2_24u84"]
+
+[node name="InDoorLamp" type="Sprite2D"]
+scale = Vector2(2, 2)
+texture = ExtResource("1_f7tqy")
+
+[node name="PointLight2D" type="PointLight2D" parent="."]
+scale = Vector2(2, 2)
+texture = ExtResource("2_24u84")

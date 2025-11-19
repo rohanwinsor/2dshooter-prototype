@@ -314,6 +314,17 @@ func die(damage, direction: Vector2, distance: float):
 
 	var hit_dir = (player_loc - global_position).normalized()
 
+	var splatter_direction := direction
+	if splatter_direction == Vector2.ZERO:
+		splatter_direction = hit_dir
+	if splatter_direction == Vector2.ZERO:
+		splatter_direction = Vector2.RIGHT
+
+	if Engine.has_singleton("BloodManager"):
+		var blood_manager := Engine.get_singleton("BloodManager")
+		if blood_manager and blood_manager.has_method("spawn_splatter"):
+			blood_manager.spawn_splatter(global_position, splatter_direction, [self])
+
 	var corpse = corpse_scene.instantiate()
 
 	corpse.global_position = global_position
