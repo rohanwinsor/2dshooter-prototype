@@ -144,14 +144,20 @@ position = Vector2(-34, -127)
 [node name="Enemy4" parent="." instance=ExtResource("5_7kyx1")]
 position = Vector2(23, -414)
 
+[node name="Enemy5" parent="." instance=ExtResource("5_7kyx1")]
+position = Vector2(840, -275)
+
+[node name="Enemy6" parent="." instance=ExtResource("5_7kyx1")]
+position = Vector2(147, -485)
+
+[node name="Enemy7" parent="." instance=ExtResource("5_7kyx1")]
+position = Vector2(147, -485)
+
+[node name="Enemy8" parent="." instance=ExtResource("5_7kyx1")]
+position = Vector2(447, -485)
+
 [node name="Door" parent="." instance=ExtResource("7_py04p")]
 position = Vector2(-105, -136)
-
-[node name="Sprite2D" type="Sprite2D" parent="."]
-z_index = -100
-position = Vector2(692, -179)
-scale = Vector2(100, 100)
-texture = ExtResource("8_xncte")
 
 [node name="DirectionalLight2D" type="DirectionalLight2D" parent="."]
 energy = 0.1
@@ -183,3 +189,8 @@ position = Vector2(551, -376)
 
 [node name="Door5" parent="." instance=ExtResource("7_py04p")]
 position = Vector2(295, -488)
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+z_index = -100
+scale = Vector2(100, 100)
+texture = ExtResource("8_xncte")

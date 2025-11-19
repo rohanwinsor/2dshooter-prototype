@@ -9,6 +9,8 @@ enum WeaponType { SHOTGUN, RIFLE }
 @export var gravity: float = 980.0
 
 @export var aim_tween_duration: float = 0.15
+@export var teleport_max_distance: float = 200.0
+@export var teleport_time_scale: float = 0.1
 
 # Weapon range
 @export var max_weapon_range: float = 2000.0
@@ -36,8 +38,14 @@ var can_move = true
 @onready var player_sprite: Sprite2D = $PlayerSprite
 @onready var bullet_spawn_loc: Marker2D = $WeaponRoot/BulletSpawnLoc
 @onready var muzzle_flash: PointLight2D = $PointLight2D
+@onready var collision_shape: CollisionShape2D = $CollisionShape2D
 
 var current_gun: AnimatedSprite2D
+
+var teleport_aiming: bool = false
+var teleport_indicator_vector: Vector2 = Vector2.ZERO
+var teleport_target: Vector2 = Vector2.ZERO
+var teleport_original_time_scale: float = 1.0
 
 # Stair interaction
 var using_stairs: bool = false
@@ -72,6 +80,7 @@ func _ready() -> void:
 
 
 func _physics_process(delta: float) -> void:
+	process_teleport_input()
 	if can_move == false:
 		return
 	# Gravity
@@ -128,7 +137,7 @@ func _physics_process(delta: float) -> void:
 		tween.tween_property(current_gun, "scale", target_scale, aim_tween_duration).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN)
 		tween.tween_callback(func(): weapon_root.visible = false).set_delay(aim_tween_duration)
 
-	if is_aiming:
+	if is_aiming and not teleport_aiming:
 		# Rotate weapon_root toward cursor so BulletSpawnLoc points at mouse
 		var angle_to_mouse = weapon_root.global_position.angle_to_point(mouse_pos)
 		weapon_root.rotation = angle_to_mouse
@@ -156,6 +165,78 @@ func _physics_process(delta: float) -> void:
 		
 		enable_stair_collision()
 		disable_landing_collision()
+
+func process_teleport_input() -> void:
+	if Input.is_action_just_pressed("teleport_aim"):
+		start_teleport_aim()
+
+	if teleport_aiming:
+		update_teleport_target()
+		if Input.is_action_just_pressed("shoot"):
+			execute_teleport()
+
+	if Input.is_action_just_released("teleport_aim"):
+		end_teleport_aim()
+
+func start_teleport_aim() -> void:
+	if teleport_aiming:
+		return
+	teleport_aiming = true
+	teleport_original_time_scale = Engine.time_scale
+	Engine.time_scale = teleport_time_scale
+	update_teleport_target()
+
+func update_teleport_target() -> void:
+	var to_mouse = get_global_mouse_position() - global_position
+	var length = to_mouse.length()
+	if length > teleport_max_distance:
+		to_mouse = to_mouse.normalized() * teleport_max_distance
+	teleport_indicator_vector = to_mouse
+	teleport_target = global_position + teleport_indicator_vector
+	queue_redraw()
+
+func end_teleport_aim() -> void:
+	if not teleport_aiming:
+		return
+	teleport_aiming = false
+	Engine.time_scale = teleport_original_time_scale
+	teleport_indicator_vector = Vector2.ZERO
+	teleport_target = global_position
+	queue_redraw()
+
+func execute_teleport() -> void:
+	if teleport_indicator_vector.length() < 1.0:
+		return
+	var shape := collision_shape.shape
+	if shape == null:
+		return
+	var space_state := get_world_2d().direct_space_state
+	var params := PhysicsShapeQueryParameters2D.new()
+	params.shape = shape
+	params.transform = collision_shape.global_transform.translated(teleport_indicator_vector)
+	params.collision_mask = collision_mask
+	params.collide_with_areas = false
+	params.exclude = [self]
+	var collisions := space_state.intersect_shape(params, 1)
+	if collisions.is_empty():
+		global_position += teleport_indicator_vector
+		velocity = Vector2.ZERO
+		end_teleport_aim()
+
+func _draw() -> void:
+	if not teleport_aiming or teleport_indicator_vector == Vector2.ZERO:
+		return
+	var color := Color(0.0, 0.497, 0.827, 0.85)
+	var start := Vector2.ZERO
+	var end := teleport_indicator_vector
+	draw_line(start, end, color, 2.0)
+	var dir := end.normalized()
+	var head_length := 12.0
+	var head_half_width := 6.0
+	var tip := end
+	var base := end - dir * head_length
+	var offset := dir.orthogonal() * head_half_width
+	draw_polygon([tip, base + offset, base - offset], [color, color, color])
 
 func switch_weapon(weapon: WeaponType) -> void:
 	current_weapon = weapon

@@ -336,7 +336,7 @@ func die(damage, direction: Vector2, distance: float):
 	var force = direction * 10.0 * min(damage, 50)
 	corpse.apply_central_impulse(force)
 	corpse.can_kill = true
-	#corpse.start_fade_and_dddcleanup()		
+	#corpse.start_fade_and_leanup()		
 	queue_free()
 
 
