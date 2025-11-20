@@ -66,7 +66,7 @@ position = Vector2(-328, -152)
 [node name="Camera2D" type="Camera2D" parent="Player"]
 position = Vector2(-11, -148)
 offset = Vector2(10, 100)
-zoom = Vector2(2, 2)
+zoom = Vector2(1.5, 1.5)
 process_callback = 0
 
 [node name="CanvasModulate" type="CanvasModulate" parent="."]
@@ -194,3 +194,19 @@ position = Vector2(295, -488)
 z_index = -100
 scale = Vector2(100, 100)
 texture = ExtResource("8_xncte")
+
+[node name="RichTextLabel" type="RichTextLabel" parent="."]
+offset_left = -614.0
+offset_top = -381.0
+offset_right = -228.0
+offset_bottom = -120.0
+text = "Untitled2DPlatformer
+A,D: Move left and Right
+1,2: Change Weapons
+Right Mouse Button: Aim
+E: Bring Teleport direction
+Left Mouse Button: Shoot/Teleport
+Shift: Use Stairs
+Eval On: FUN/SPEED/COOL
+U should feel like tom curise in Collateral  or Doom guy for non movie fans.
+Try stuff here and go kill all the enemies"

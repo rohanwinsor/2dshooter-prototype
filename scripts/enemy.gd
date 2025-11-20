@@ -31,14 +31,6 @@ var player_visible_time: float = 0.0  # Time player stays in view
 enum State { IDLE, PATROL, HUNTING, ENGAGE }
 
 
-# --- Patrol parameters ---
-@export var patrol_distance: float = 10000.0
-@export var patrol_speed: float = 40.0
-@export var patrol_cycles: int = 3
-
-# --- Patrol state tracking ---
-var patrol_start_pos: Vector2
-var patrol_direction: int = 1
 var base_scale_x: float = 1.0
 
 # --Stair Navigation--
@@ -193,20 +185,7 @@ func handle_idle_state(delta: float) -> void:
 
 
 func handle_patrol_state(delta: float) -> void:
-	# TODO: Implement patrol logic
-	velocity.x = patrol_direction * patrol_speed
-	face_direction(patrol_direction)
-
-	var distance_from_start = abs(global_position.x - patrol_start_pos.x)
-	if distance_from_start >= patrol_distance:
-		patrol_direction *= -1
-		patrol_start_pos.x = global_position.x
-	
-	
-	if check_for_obstacle(Vector2(patrol_direction, 0)):
-		patrol_direction *= -1
-		patrol_start_pos.x = global_position.x
-
+	velocity.x = 0
 
 func handle_hunting_state(delta: float) -> void:
 	var dir = player_loc - global_position
