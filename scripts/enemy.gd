@@ -61,7 +61,7 @@ var previous_state: State = State.IDLE
 var cool_down_not_seen_player = 4
 var player_visible_time: float = 0.0  # Time player stays in view
 
-enum State { IDLE, PATROL, HUNTING, ENGAGE }
+enum State { IDLE, PATROL, SUSPICION, TAKE_COVER, HUNTING, SEARCHING, ENGAGE }
 
 
 var base_scale_x: float = 1.0
@@ -166,64 +166,151 @@ func _physics_process(delta: float) -> void:
 				handle_idle_state(delta)
 			State.PATROL:
 				handle_patrol_state(delta)
+			State.SUSPICION:
+				handle_suspicion_state(delta)
+			State.TAKE_COVER:
+				handle_take_cover_state(delta)
 			State.HUNTING:
 				handle_hunting_state(delta)
+			State.SEARCHING:
+				handle_searching_state(delta)
 			State.ENGAGE:
 				handle_engage_state(delta)
 
 	move_and_slide()
 
 
-# ---------- STATE MANAGEMENT ---------- #
+ # ---------- STATE MANAGEMENT ---------- #
 
 func change_state(new_state: State) -> void:
 	if state == new_state:
 		return
-	previous_state = state
+	var old_state: State = state
+	on_exit_state(old_state, new_state)
+	previous_state = old_state
 	state = new_state
-	on_enter_state(new_state, previous_state)
+	on_enter_state(new_state, old_state)
 
 
-func on_enter_state(new_state: State, previous_state: State) -> void:
+func on_enter_state(new_state: State, from_state: State) -> void:
 	match new_state:
+		State.IDLE:
+			enter_idle_state(from_state)
 		State.PATROL:
-			if previous_state == State.HUNTING:
-				velocity.x = 0
-				face_left() if is_facing_right() else face_right()
+			enter_patrol_state(from_state)
+		State.SUSPICION:
+			enter_suspicion_state(from_state)
+		State.TAKE_COVER:
+			enter_take_cover_state(from_state)
 		State.HUNTING:
-			weapon_vibe.modulate.a = 0
-			
-			# Reset warning flash when entering hunt state
-			warning_shader.set_shader_parameter("flash_intensity", 0.0)
-			var tween = create_tween().set_parallel(true)
-			tween.tween_property(weapon, "modulate:a", 1.0, aim_tween_duration)
-			# TODO: Play weapon raise animation here
-
+			enter_hunting_state(from_state)
+		State.SEARCHING:
+			enter_searching_state(from_state)
 		State.ENGAGE:
-			weapon_vibe.modulate.a = 0
-			print("DO ENGAGE")
-			# TODO: Trigger attack animation here
+			enter_engage_state(from_state)
 
-		State.IDLE, State.PATROL:
-			weapon_vibe.modulate.a = 1
-			var tween = create_tween().set_parallel(true)
-			tween.tween_property(weapon, "modulate:a", 0.0, aim_tween_duration)
+
+func on_exit_state(old_state: State, to_state: State) -> void:
+	match old_state:
+		State.IDLE:
+			exit_idle_state(to_state)
+		State.PATROL:
+			exit_patrol_state(to_state)
+		State.SUSPICION:
+			exit_suspicion_state(to_state)
+		State.TAKE_COVER:
+			exit_take_cover_state(to_state)
+		State.HUNTING:
+			exit_hunting_state(to_state)
+		State.SEARCHING:
+			exit_searching_state(to_state)
+		State.ENGAGE:
+			exit_engage_state(to_state)
 
 
 # ---------- STATE HANDLERS ---------- #
 
-func handle_idle_state(delta: float) -> void:
+func enter_idle_state(_from_state: State) -> void:
 	pass
 
 
-func handle_patrol_state(delta: float) -> void:
-	pass
-
-func handle_hunting_state(delta: float) -> void:
+func handle_idle_state(_delta: float) -> void:
 	pass
 
 
-func handle_engage_state(delta: float) -> void:
+func exit_idle_state(_to_state: State) -> void:
+	pass
+
+
+func enter_patrol_state(_from_state: State) -> void:
+	pass
+
+
+func handle_patrol_state(_delta: float) -> void:
+	pass
+
+
+func exit_patrol_state(_to_state: State) -> void:
+	pass
+
+
+func enter_suspicion_state(_from_state: State) -> void:
+	pass
+
+
+func handle_suspicion_state(_delta: float) -> void:
+	pass
+
+
+func exit_suspicion_state(_to_state: State) -> void:
+	pass
+
+
+func enter_take_cover_state(_from_state: State) -> void:
+	pass
+
+
+func handle_take_cover_state(_delta: float) -> void:
+	pass
+
+
+func exit_take_cover_state(_to_state: State) -> void:
+	pass
+
+
+func enter_hunting_state(_from_state: State) -> void:
+	pass
+
+
+func handle_hunting_state(_delta: float) -> void:
+	pass
+
+
+func exit_hunting_state(_to_state: State) -> void:
+	pass
+
+
+func enter_searching_state(_from_state: State) -> void:
+	pass
+
+
+func handle_searching_state(_delta: float) -> void:
+	pass
+
+
+func exit_searching_state(_to_state: State) -> void:
+	pass
+
+
+func enter_engage_state(_from_state: State) -> void:
+	pass
+
+
+func handle_engage_state(_delta: float) -> void:
+	pass
+
+
+func exit_engage_state(_to_state: State) -> void:
 	pass
 
 # Core Navigation Logic, take in wat position to go to and will take the player ter
