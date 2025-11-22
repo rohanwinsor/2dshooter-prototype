@@ -1,4 +1,4 @@
-[gd_scene load_steps=18 format=3 uid="uid://blbxecdtwf6kf"]
+[gd_scene load_steps=19 format=3 uid="uid://blbxecdtwf6kf"]
 
 [ext_resource type="Script" uid="uid://bd6gpigvm1xfg" path="res://scripts/enemy.gd" id="1_pqhw6"]
 [ext_resource type="Texture2D" uid="uid://dul2fjvh5hkah" path="res://assets/enemy.png" id="2_ae2me"]
@@ -74,12 +74,13 @@ animations = [{
 "speed": 15.0
 }]
 
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_ae2me"]
+size = Vector2(40, 50)
+
 [node name="Enemy" type="CharacterBody2D"]
-scale = Vector2(-1, 1)
 collision_layer = 16
 collision_mask = 5
 script = ExtResource("1_pqhw6")
-spriteColor = Color(0.99969465, 0.043425985, 0.02404285, 1)
 
 [node name="Sprite2D" type="Sprite2D" parent="."]
 position = Vector2(0, -15)
@@ -90,20 +91,15 @@ texture = ExtResource("2_ae2me")
 position = Vector2(-0.5, -13)
 shape = SubResource("RectangleShape2D_pqhw6")
 
-[node name="PlayerDetection" type="RayCast2D" parent="."]
-position = Vector2(0, -13)
-target_position = Vector2(46, 0)
-collision_mask = 9
-
 [node name="VisibleOnScreenNotifier2D" type="VisibleOnScreenNotifier2D" parent="."]
 position = Vector2(0, -13)
 
 [node name="Weapon" type="AnimatedSprite2D" parent="."]
-visible = false
-position = Vector2(17.999998, -16.999996)
+position = Vector2(1.0000038, -15)
 scale = Vector2(0.06, 0.06)
 sprite_frames = SubResource("SpriteFrames_ayeso")
 animation = &"shoot"
+offset = Vector2(200, -20)
 
 [node name="WeaponVibe" type="AnimatedSprite2D" parent="."]
 position = Vector2(8, -7.000001)
@@ -115,3 +111,12 @@ animation = &"shoot"
 [node name="ObstacleDetection" type="RayCast2D" parent="."]
 position = Vector2(0, -13)
 target_position = Vector2(46, 0)
+
+[node name="Timer" type="Timer" parent="."]
+one_shot = true
+
+[node name="PlayerDetection" type="ShapeCast2D" parent="."]
+position = Vector2(15, -23)
+shape = SubResource("RectangleShape2D_ae2me")
+target_position = Vector2(204, 0)
+collision_mask = 8

@@ -1,5 +1,5 @@
 extends CharacterBody2D
-
+class_name Player
 const BULLET = preload("res://entities/bullet.tscn")
 
 enum WeaponType { SHOTGUN, RIFLE }
@@ -292,6 +292,11 @@ func shoot() -> void:
 	if current_weapon == WeaponType.RIFLE:
 		rifle_ammo -= 1
 		
+
+	# Check for near misses on all enemies
+	for enemy in get_tree().get_nodes_in_group("Enemy"):
+		if enemy.has_method("is_shot_near"):
+			enemy.is_shot_near(global_position)
 
 	# Fire pellets (hitscan + visual tracers)
 	for i in range(pellet_count):

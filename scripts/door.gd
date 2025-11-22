@@ -17,7 +17,6 @@ func _ready() -> void:
 	
 	
 func _body_entered(body: Node2D):
-	print("Player Enterd", body.is_in_group("Player"))
 	if body.is_in_group("Player") or body.is_in_group("Enemy"):
 		player_in_range = true
 		if state == State.CLOSE:
@@ -31,17 +30,14 @@ func _body_entered(body: Node2D):
 		
 	
 func _body_exited(body: Node2D):
-	print("Player Exited ::", body.is_in_group("Player"), "State ::", state)
 	if body.is_in_group("Player") or body.is_in_group("Enemy"):
 		player_in_range = false
 		if state == State.OPEN:
-			print("Player out")
 			animated_sprite_2d.play("closing")
 			await animated_sprite_2d.animation_finished
 			animated_sprite_2d.play("close")
 			state = State.CLOSE
 			door_solid_shape.set_deferred("disabled", false)
-			print("HERE?")
 
 
 #func _process(delta: float) -> void:
