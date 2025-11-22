@@ -1,3 +1,36 @@
+"""
+DEFINE ENEMY BEHAVIOR for 2D action platformer
+stateDiagram-v2
+    [*] --> PATROL
+    [*] --> IDLE
+
+    %% INITIAL ONLY (first time enemy detects or reacts)
+    PATROL --> SUSPICION: Player visible initial delay 1s
+    IDLE --> SUSPICION: Player visible initial delay 1s
+
+    PATROL --> HUNTING: Gunshot heard initial delay 1s
+    IDLE --> HUNTING: Gunshot heard initial delay 1s
+
+    %% AFTER INITIAL DETECTION (no more delays)
+    PATROL --> SUSPICION: Player visible no delay after first seen
+    IDLE --> SUSPICION: Player visible no delay after first seen
+
+    PATROL --> HUNTING: Gunshot heard no delay after first seen
+    IDLE --> HUNTING: Gunshot heard no delay after first seen
+
+    %% SUSPICION BRANCH
+    SUSPICION --> HUNTING: No cover nearby hold 1s
+    SUSPICION --> TAKE_COVER: Cover nearby hold 1s
+    TAKE_COVER --> HUNTING: Fire warning shot
+
+    %% HUNTING BEHAVIOR
+    HUNTING --> SEARCHING: Player lost or gunshot location empty
+
+    %% SEARCHING BEHAVIOR
+    SEARCHING --> HUNTING: Player visible no delay
+    SEARCHING --> PATROL: Search complete return to patrol
+    SEARCHING --> IDLE: Search complete return to idle
+"""
 extends CharacterBody2D
 
 const SPEED = 100.0
@@ -47,6 +80,7 @@ var can_move = true
 func _ready():
 	add_to_group("Enemy")
 	# Configure obstacle detection - only collide with world layer 1 (TileSet's physics_layer_0)
+	# claude did this figure out how to do this
 	for i in range(1, 33):
 		obstacle_detection.set_collision_mask_value(i, i == 1)
 	obstacle_detection.collide_with_bodies = true
@@ -77,8 +111,6 @@ func check_for_obstacle(direction: Vector2) -> bool:
 			return true
 	return false
 			
-	
-
 func check_for_player(direction, delta) -> void:
 	if visible_on_screen_notifier_2d.is_on_screen():
 		player_detection.target_position = direction * detection_distance
@@ -181,33 +213,18 @@ func on_enter_state(new_state: State, previous_state: State) -> void:
 # ---------- STATE HANDLERS ---------- #
 
 func handle_idle_state(delta: float) -> void:
-	velocity.x = 0
+	pass
 
 
 func handle_patrol_state(delta: float) -> void:
-	velocity.x = 0
+	pass
 
 func handle_hunting_state(delta: float) -> void:
-	var dir = player_loc - global_position
-	var distance = dir.length()
-
-	if distance <= ATTACK_RANGE and is_player_detected:
-		change_state(State.ENGAGE)
-		return
-
-	dir = dir.normalized()
-	velocity.x = dir.x * HUNT_SPEED
-	face_direction(dir.x)
+	pass
 
 
 func handle_engage_state(delta: float) -> void:
-	
-	# TODO: Shooting logic goes here
-	# When implementing shooting, calculate firing distance and pass to bullet:
-	# var distance_to_player = global_position.distance_to(player_loc)
-	# bullet.firing_distance = distance_to_player
-	velocity.x = 0
-	weapon.play("shoot")
+	pass
 
 # Core Navigation Logic, take in wat position to go to and will take the player ter
 func navigate_to_postion(postion):	
@@ -297,6 +314,7 @@ func take_damage(damage: float, direction: Vector2, distance: float = 0.0) -> vo
 		die(damage, direction, distance)
 
 func die(damage, direction: Vector2, distance: float):
+	print("distance ::", distance)
 	var impact_dir := direction.normalized()
 	if impact_dir == Vector2.ZERO:
 		impact_dir = Vector2.RIGHT  # fallback if something calls with zero vector
