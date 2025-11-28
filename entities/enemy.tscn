@@ -102,6 +102,7 @@ animation = &"shoot"
 offset = Vector2(200, -20)
 
 [node name="WeaponVibe" type="AnimatedSprite2D" parent="."]
+visible = false
 position = Vector2(8, -7.000001)
 rotation = 0.8568473
 scale = Vector2(0.06, 0.06)
@@ -116,6 +117,7 @@ target_position = Vector2(46, 0)
 one_shot = true
 
 [node name="PlayerDetection" type="ShapeCast2D" parent="."]
+visible = false
 position = Vector2(15, -23)
 shape = SubResource("RectangleShape2D_ae2me")
 target_position = Vector2(204, 0)
